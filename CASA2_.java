@@ -113,7 +113,7 @@ public class CASA2_ implements PlugInFilter,Measurements  {
 		gd.addNumericField("e, Minimum VSL for motile (um/s):", minVSL,3);
 		gd.addNumericField("f, Minimum VAP for motile (um/s):", minVAP,20);
 		gd.addNumericField("g, Minimum VCL for motile (um/s):", minVCL,25);
-		gd.AddNumericField("h, Minimum net distance traveled (um):", minTravel, 0);
+		gd.addNumericField("h, Minimum net distance traveled (um):", minTravel, 0);
 		gd.addNumericField("h, Low VAP speed (um/s):", lowVAPspeed,5);
 		gd.addNumericField("i, Maximum percentage of path with zero VAP:", maxPzVAP,1);
 		gd.addNumericField("j, Maximum percentage of path with low VAP:", maxPlVAP,25);
