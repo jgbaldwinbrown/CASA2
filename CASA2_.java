@@ -12,7 +12,7 @@ import ij.measure.*;
 
 //computer assisted sperm analysis plugin, based on mTrack2r
 
-public class CASA_ implements PlugInFilter,Measurements  {
+public class CASA2_ implements PlugInFilter,Measurements  {
 
 	ImagePlus	imp;
 	int		nParticles;
@@ -36,6 +36,8 @@ public class CASA_ implements PlugInFilter,Measurements  {
     	float	minVSL = 3;
 	//minimum curvilinear velocity to be termed motile - this is the point to point (all all them) velocity
 	float	minVCL = 25;
+	//minimum net distance traveled in um along entire track
+	float	minTravel = 0;
 	//min velocity on the average path to be termed motile - this is the path that has been averaged with a roaming avg
 	float	minVAP = 20;
 	//this is the velocity below which will be recorded as low
@@ -64,6 +66,8 @@ public class CASA_ implements PlugInFilter,Measurements  {
 	float 	maxColumns=75;
 	//print the xy co-ordinates for all tracks?
 	int printXY = 0;
+	//print the track identities when printing xy co-ordinates for all tracks?
+	int printXYIdentities = 0;
 	//print the motion character for all motile sperm?
 	int printSperm = 0;
 	//print median values for characteristics?
@@ -109,6 +113,7 @@ public class CASA_ implements PlugInFilter,Measurements  {
 		gd.addNumericField("e, Minimum VSL for motile (um/s):", minVSL,3);
 		gd.addNumericField("f, Minimum VAP for motile (um/s):", minVAP,20);
 		gd.addNumericField("g, Minimum VCL for motile (um/s):", minVCL,25);
+		gd.AddNumericField("h, Minimum net distance traveled (um):", minTravel, 0);
 		gd.addNumericField("h, Low VAP speed (um/s):", lowVAPspeed,5);
 		gd.addNumericField("i, Maximum percentage of path with zero VAP:", maxPzVAP,1);
 		gd.addNumericField("j, Maximum percentage of path with low VAP:", maxPlVAP,25);
@@ -121,8 +126,9 @@ public class CASA_ implements PlugInFilter,Measurements  {
 		gd.addNumericField("q, Frame Rate (frames per second):", frameRate,97);
 		gd.addNumericField("r, Microns per 1000 pixels:", microPerPixel, 1075);
 		gd.addNumericField("s, Print xy co-ordinates for all tracked sperm?", printXY, 0);
-		gd.addNumericField("t, Print motion characteristics for all motile sperm?", printSperm,0);
-		gd.addNumericField("u, Print median values for motion characteristics?", printMedian,0);
+		gd.addNumericField("t, Print track ID number when printing xy co-ordinates for all tracked sperm?", printXYIdentities, 0);
+		gd.addNumericField("u, Print motion characteristics for all motile sperm?", printSperm,0);
+		gd.addNumericField("v, Print median values for motion characteristics?", printMedian,0);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
@@ -134,6 +140,7 @@ public class CASA_ implements PlugInFilter,Measurements  {
 		minVSL = (float)gd.getNextNumber();
 		minVAP = (float)gd.getNextNumber();
 		minVCL = (float)gd.getNextNumber();
+		minTravel = (float)gd.getNextNumber();
 		lowVAPspeed = (float)gd.getNextNumber();
 		maxPzVAP = (float)gd.getNextNumber();
 		maxPlVAP = (float)gd.getNextNumber();
@@ -146,7 +153,9 @@ public class CASA_ implements PlugInFilter,Measurements  {
 		frameRate = (int)gd.getNextNumber();
 		microPerPixel = (float)gd.getNextNumber();
 		printXY = (int)gd.getNextNumber();
+		printXYIdentities = (int)gd.getNextNumber();
 		printSperm = (int)gd.getNextNumber();
+		printMedian = (int)gd.getNextNumber();
 
 		//below I am trying to convert integer values required for float to decimal for percent calculations
 		maxPzVAP = maxPzVAP / 100;
@@ -416,6 +425,7 @@ public class CASA_ implements PlugInFilter,Measurements  {
 		double[] vAPS = new double[trackCount];
 		double[] vSLS = new double[trackCount];
 		double[] sumVAPdistsOrigin = new double[trackCount];
+		double[] Travel = new double[trackCount];
 		
 		//angle and beat calculations
 		double dY = 0;
@@ -512,9 +522,17 @@ public class CASA_ implements PlugInFilter,Measurements  {
 				vAPy = 0;
 
 				holdTotalVAPdistance = 0;
+
+				double initialX = oldParticle.x;
+				double initialY = oldParticle.y;
+				double finalX = oldParticle.x;
+				double finalY = oldParticle.y;
 				
 				for (;jT.hasNext();){
 					particle newParticle=(particle) jT.next();
+
+					finalX = newParticle.x;
+					finalY = newParticle.y;
 
 					//VCL calculations
 					holdDistance= Math.sqrt(sqr(oldParticle.x-newParticle.x)+sqr(oldParticle.y-newParticle.y));
@@ -651,7 +669,11 @@ public class CASA_ implements PlugInFilter,Measurements  {
 					//save the last two VCL points 
 					oldParticle=newParticle;
 					if(printXY !=0){
-						IJ.write(xyPts + xyVAPpts + firstVAPpts);
+						if (printXYIdentities != 0) {
+							IJ.write(" " + trackNr + xyPts + xyVAPpts + firstVAPpts);
+						} else {
+							IJ.write(xyPts + xyVAPpts + firstVAPpts);
+						}
 					}
 				}
 				//put the calculated frames into an array, stored for each sperm and store VSL
@@ -664,6 +686,11 @@ public class CASA_ implements PlugInFilter,Measurements  {
 				if(printXY !=0){
 					IJ.write(xyPts + xyVAPpts + firstVAPpts + pointsAnalyzed);
 				}
+
+				double TravelX = finalX - initialX;
+				double TravelY = finalY - initialY;
+				double TotalTravel = Math.sqrt((TravelX * TravelX) + (TravelY * TravelY));
+				Travel[displayTrackNr-1] = TotalTravel;
 			}
 		}
 		//hold sum of all changes from frame to frame for a given sperm before generating a per second value for that sperm
@@ -760,7 +787,7 @@ public class CASA_ implements PlugInFilter,Measurements  {
 			totalSperm++;
 			motileTracks[m] = 0;
 			//two tiers for motility determination, first check a set of characteristics then if we meet those criteria, check three other sets... have to meet the first tier and one of the second tiers 
-			if((vSLS[m] > minVSL) && (vCLS[m] > minVCL) && (((vAPS[m] / vCLS[m]) * 100) > 2) && (vAPS[m] > minVAP)){
+			if((vSLS[m] > minVSL) && (vCLS[m] > minVCL) && (((vAPS[m] / vCLS[m]) * 100) > 2) && (vAPS[m] > minVAP) && (Travel[m] > minTravel)){
 				if(((((vAPS[m] / vCLS[m]) * 100) < highWOB) && (((vSLS[m] / vAPS[m]) * 100) < highLIN) && (numLowVAP[m] < maxPlVAP) && (numVAPzero[m] < maxPzVAP)) 
 				 || ((vCLS[m] > lowVCLspeed) && (vAPS[m] > lowVAPspeed2))
 				 || ((((vAPS[m] / vCLS[m]) * 100) < highWOB2) || (((vSLS[m] / vAPS[m]) * 100) < highLIN2))){
