@@ -36,8 +36,10 @@ public class CASA2_ implements PlugInFilter,Measurements  {
     	float	minVSL = 3;
 	//minimum curvilinear velocity to be termed motile - this is the point to point (all all them) velocity
 	float	minVCL = 25;
-	//minimum net distance traveled in um along entire track
+	//minimum net distance traveled in pixels along entire track
 	float	minTravel = 0;
+	//minimum net distance traveled in pixels per frame along entire track
+	float	minTravelPerFrame = 0;
 	//min velocity on the average path to be termed motile - this is the path that has been averaged with a roaming avg
 	float	minVAP = 20;
 	//this is the velocity below which will be recorded as low
@@ -113,22 +115,23 @@ public class CASA2_ implements PlugInFilter,Measurements  {
 		gd.addNumericField("e, Minimum VSL for motile (um/s):", minVSL,3);
 		gd.addNumericField("f, Minimum VAP for motile (um/s):", minVAP,20);
 		gd.addNumericField("g, Minimum VCL for motile (um/s):", minVCL,25);
-		gd.addNumericField("h, Minimum net distance traveled (um):", minTravel, 0);
-		gd.addNumericField("h, Low VAP speed (um/s):", lowVAPspeed,5);
-		gd.addNumericField("i, Maximum percentage of path with zero VAP:", maxPzVAP,1);
-		gd.addNumericField("j, Maximum percentage of path with low VAP:", maxPlVAP,25);
-		gd.addNumericField("k, Low VAP speed 2 (um/s):", lowVAPspeed2,25);
-		gd.addNumericField("l, Low VCL speed (um/s):", lowVCLspeed,35);
-		gd.addNumericField("m, High WOB (percent VAP/VCL):", highWOB,80);
-		gd.addNumericField("n, High LIN (percent VSL/VAP):", highLIN,80);
-		gd.addNumericField("o, High WOB two (percent VAP/VCL):", highWOB2,50);
-		gd.addNumericField("p, High LIN two (percent VSL/VAP):", highLIN2,60);
-		gd.addNumericField("q, Frame Rate (frames per second):", frameRate,97);
-		gd.addNumericField("r, Microns per 1000 pixels:", microPerPixel, 1075);
-		gd.addNumericField("s, Print xy co-ordinates for all tracked sperm?", printXY, 0);
-		gd.addNumericField("t, Print track ID number when printing xy co-ordinates for all tracked sperm?", printXYIdentities, 0);
-		gd.addNumericField("u, Print motion characteristics for all motile sperm?", printSperm,0);
-		gd.addNumericField("v, Print median values for motion characteristics?", printMedian,0);
+		gd.addNumericField("h, Minimum net distance traveled (pixels):", minTravel, 0);
+		gd.addNumericField("i, Minimum net distance traveled (pixels per frame):", minTravelPerFrame, 0);
+		gd.addNumericField("j, Low VAP speed (um/s):", lowVAPspeed,5);
+		gd.addNumericField("k, Maximum percentage of path with zero VAP:", maxPzVAP,1);
+		gd.addNumericField("l, Maximum percentage of path with low VAP:", maxPlVAP,25);
+		gd.addNumericField("m, Low VAP speed 2 (um/s):", lowVAPspeed2,25);
+		gd.addNumericField("n, Low VCL speed (um/s):", lowVCLspeed,35);
+		gd.addNumericField("o, High WOB (percent VAP/VCL):", highWOB,80);
+		gd.addNumericField("p, High LIN (percent VSL/VAP):", highLIN,80);
+		gd.addNumericField("q, High WOB two (percent VAP/VCL):", highWOB2,50);
+		gd.addNumericField("r, High LIN two (percent VSL/VAP):", highLIN2,60);
+		gd.addNumericField("s, Frame Rate (frames per second):", frameRate,97);
+		gd.addNumericField("t, Microns per 1000 pixels:", microPerPixel, 1075);
+		gd.addNumericField("u, Print xy co-ordinates for all tracked sperm?", printXY, 0);
+		gd.addNumericField("v, Print track ID number when printing xy co-ordinates for all tracked sperm?", printXYIdentities, 0);
+		gd.addNumericField("w, Print motion characteristics for all motile sperm?", printSperm,0);
+		gd.addNumericField("x, Print median values for motion characteristics?", printMedian,0);
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return;
@@ -141,6 +144,7 @@ public class CASA2_ implements PlugInFilter,Measurements  {
 		minVAP = (float)gd.getNextNumber();
 		minVCL = (float)gd.getNextNumber();
 		minTravel = (float)gd.getNextNumber();
+		minTravelPerFrame = (float)gd.getNextNumber();
 		lowVAPspeed = (float)gd.getNextNumber();
 		maxPzVAP = (float)gd.getNextNumber();
 		maxPlVAP = (float)gd.getNextNumber();
@@ -426,6 +430,7 @@ public class CASA2_ implements PlugInFilter,Measurements  {
 		double[] vSLS = new double[trackCount];
 		double[] sumVAPdistsOrigin = new double[trackCount];
 		double[] Travel = new double[trackCount];
+		double[] TravelPerFrame = new double[trackCount];
 		
 		//angle and beat calculations
 		double dY = 0;
@@ -691,6 +696,7 @@ public class CASA2_ implements PlugInFilter,Measurements  {
 				double TravelY = finalY - initialY;
 				double TotalTravel = Math.sqrt((TravelX * TravelX) + (TravelY * TravelY));
 				Travel[displayTrackNr-1] = TotalTravel;
+				TravelPerFrame[displayTrackNr-1] = TotalTravel / ((double) displayTrackNr);
 			}
 		}
 		//hold sum of all changes from frame to frame for a given sperm before generating a per second value for that sperm
@@ -787,7 +793,7 @@ public class CASA2_ implements PlugInFilter,Measurements  {
 			totalSperm++;
 			motileTracks[m] = 0;
 			//two tiers for motility determination, first check a set of characteristics then if we meet those criteria, check three other sets... have to meet the first tier and one of the second tiers 
-			if((vSLS[m] > minVSL) && (vCLS[m] > minVCL) && (((vAPS[m] / vCLS[m]) * 100) > 2) && (vAPS[m] > minVAP) && (Travel[m] > minTravel)){
+			if((vSLS[m] > minVSL) && (vCLS[m] > minVCL) && (((vAPS[m] / vCLS[m]) * 100) > 2) && (vAPS[m] > minVAP) && (Travel[m] > minTravel)&& (TravelPerFrame[m] > minTravelPerFrame)){
 				if(((((vAPS[m] / vCLS[m]) * 100) < highWOB) && (((vSLS[m] / vAPS[m]) * 100) < highLIN) && (numLowVAP[m] < maxPlVAP) && (numVAPzero[m] < maxPzVAP)) 
 				 || ((vCLS[m] > lowVCLspeed) && (vAPS[m] > lowVAPspeed2))
 				 || ((((vAPS[m] / vCLS[m]) * 100) < highWOB2) || (((vSLS[m] / vAPS[m]) * 100) < highLIN2))){
