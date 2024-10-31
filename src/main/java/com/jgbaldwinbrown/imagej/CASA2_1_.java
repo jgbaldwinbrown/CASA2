@@ -12,7 +12,7 @@ import ij.measure.*;
 
 //computer assisted sperm analysis plugin, based on mTrack2r
 
-public class CASA2_ implements PlugInFilter,Measurements  {
+public class CASA2_1_ implements PlugInFilter,Measurements  {
 
 	ImagePlus	imp;
 	int		nParticles;
