@@ -696,7 +696,7 @@ public class CASA2v1_ implements PlugInFilter,Measurements  {
 				double TravelY = finalY - initialY;
 				double TotalTravel = Math.sqrt((TravelX * TravelX) + (TravelY * TravelY));
 				Travel[displayTrackNr-1] = TotalTravel;
-				TravelPerFrame[displayTrackNr-1] = TotalTravel / ((double) displayTrackNr);
+				TravelPerFrame[displayTrackNr-1] = TotalTravel / ((double) frame);
 			}
 		}
 		//hold sum of all changes from frame to frame for a given sperm before generating a per second value for that sperm
