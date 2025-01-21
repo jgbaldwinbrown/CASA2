@@ -20,7 +20,36 @@ Documentation:
 
 [https://imagej.net/ij/plugins/docs/CASAinstructions.pdf](https://imagej.net/ij/plugins/docs/CASAinstructions.pdf)
 
+## Prerequisites
+
+- ImageJ 1.36 or higher ([https://imagej.net/](https://imagej.net/))
+- Maven ([https://github.com/apache/maven](https://github.com/apache/maven))
+
+To install these in Debian-derived Linux distributions, run the following command:
+
+```sh
+sudo apt install imagej maven
+```
+
+## Building
+
+In this directory, run Maven using this command:
+
+```sh
+mvn
+```
+
 ## Installation
+
+Maven will install the requisite class files in `$HERE/target/classes/`. Copy
+the files `CASA2v1.class` and `CASA2v1_$particle.class` into
+$HOME/.imagej.plugins using the following commands:
+
+```sh
+mkdir -p ~/.imagej/plugins
+cp ./target/classes/CASA2v1.class ~/.imagej/plugins/
+cp ./target/classes/CASA2v1_$particle.class ~/.imagej/plugins/
+```
 
 ## Changes
 
